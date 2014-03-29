@@ -18,6 +18,7 @@ from django.http import HttpResponse
 import logging
 from open_facebook.api import OpenFacebook
 from django_facebook.api import get_persistent_graph, require_persistent_graph
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -147,19 +148,9 @@ def example(request):
 	
 
 
-	return render_to_response('example.html', context)
+	return render_to_response('home.html', context)
   
-
-@facebook_required_lazy
-@csrf_exempt
-def test(request):
-	print 'yolo'
-	print request.POST
 	
-	return HttpResponse(request.POST.get('msg', False))
-	
-
-
 @facebook_required_lazy
 def reindex(request):
 
@@ -170,14 +161,24 @@ def reindex(request):
 	print graph.get('me/feed')
 	return HttpResponse("Done yo!")
 
+@facebook_required_lazy
+def query(request):
 
+	require_persistent_graph(request)
+	context = RequestContext(request)
+	print 'querying yo'
+	graph = request.facebook
+	feed_dict = graph.get('me/feed', limit=30)
 
-
-
-
-
-
-
+	ids = []
+	for datum in feed_dict['data']:
+		ids.append(datum['id'])
+	
+	response = {}
+	response ['data'] = ids
+	response['count'] = 30
+	print response
+	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
 
 
 
