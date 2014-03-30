@@ -109,7 +109,8 @@ function udpatePostPanel (postData)
         {
             if (postData.to)
             {
-                heading = generatePanelHeading(postData.from.name+" posted on "+postData.to.name+"'s wall:");    
+                
+                heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s wall:");    
             }
             else
             {
@@ -222,5 +223,5 @@ function generatePanelHeading (message)
 }
 function generatePanelBody (message)
 {
-    return '<div class="panel-body">'+message+'</div>';
+    return '<div class="panel-body word-wrap">'+message+'</div>';
 }
