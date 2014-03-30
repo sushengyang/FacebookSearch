@@ -19,4 +19,6 @@ urlpatterns += patterns(
     url(r'^example/$', 'example', name='facebook_example'),
     url(r'^reindex/$', 'reindex', name='reindex'),
     url(r'^query/$', 'query', name='query'),
+    url(r'^profile-picture/$', 'getProfilePicture', name='profile-picture'),
+    url(r'^graph-post/(?P<postID>[0-9_]+)/$', 'getGraphPost', name='graph-post'),
 )

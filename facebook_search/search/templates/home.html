@@ -31,9 +31,21 @@
 		<!-- Begin page content -->
 		<div class="container">
 			<div class="page-header">
-				<h1>Facebook Search</h1>
+				<div class="row">
+					<div class="col-md-8">
+						<h1>Facebook Search</h1>
+					</div>
+					{% if user.is_authenticated %}
+					<div class="col-md-4">
+						<div class="profile-info">
+							<img class="pull-left img-rounded profile-image" id = "profile-picture" height="40px" src="" >
+							Hi, {{ user.first_name }}!<br>
+							<button id="logout" class="btn btn-danger btn-xs">Sign out</button>
+						</div>
+					</div>
+					{% endif %}
+				</div>
 			</div>
-		
 
 
 			{% if request.GET.fb_error_or_cancel or request.GET.error %}
@@ -80,8 +92,13 @@
 
 			{% if user.is_authenticated %}
 			<div class="row" >
+				
+				
+			</div>
+			<div class="row" >
 				<div class="col-md-9">
-					<h1>Welcome, {{ user.first_name }}!</h1>	
+					<br>
+					<p class="lead">This is a full-text search for your posts, comments and other activites.</p>
 				</div>
 				<div class="col-md-3">
 					<div>
@@ -97,16 +114,11 @@
 				</div>
 			</div>
 			<div class="row">
-				<div class="col-md-9">
-					<p class="lead">Full-text search for your Facebook feed is now a reality!</p>
-				</div>
-			</div>
-			<div class="row">
 				<div class="col-md-12">
 					<form role="form" id="query-form" action="{% url 'query' %}" method="post">
 						{% csrf_token %}
 						<div class="input-group input-group-lg">
-						  <input type="text" class="form-control"  placeholder="Enter search query...">
+						  <input name ="query" type="text" class="form-control"  placeholder="Enter search query...">
 				      <span class="input-group-btn">
 				        <!-- <button class="btn btn-default" type="submit">Go!</button> -->
 				        <input type="submit" class="btn btn-default" value="Go!" />
@@ -114,7 +126,19 @@
 						</div>
 					</form>
 				</div>
-			</div>
+			</div> <!-- search bar -->
+
+			<div class="row">
+				<div class="col-md-12">
+					<div id ="results-container-parent">
+						<div id = "results-container">
+
+						</div>
+					</div>
+				</div>
+			</div> <!-- row -->
+
+
 			{% endif %}
 
 

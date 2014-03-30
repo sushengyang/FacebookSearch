@@ -141,7 +141,7 @@ def example(request):
 	context = RequestContext(request)
 	print 'example yo'
 	graph = request.facebook
-	print graph.get('me/feed')
+	
 
 	# token = request.facebook.user.oauth_token.token #user token
 	# token_app=facepy.utils.get_application_access_token('APP_ID','APP_SECRET_ID') 
@@ -162,13 +162,51 @@ def reindex(request):
 	return HttpResponse("Done yo!")
 
 @facebook_required_lazy
+def getProfilePicture(request):
+	require_persistent_graph(request)
+	context = RequestContext(request)
+	print 'getting profile picture yo'
+	graph = request.facebook
+	url = graph.get('me/picture', redirect = 0, height = 50, width = 50, type = 'normal')
+	print url
+	return HttpResponse(json.dumps(url, ensure_ascii=False), mimetype="application/json")
+
+
+@facebook_required_lazy
+def getGraphPost (request, postID):
+	require_persistent_graph(request)
+	context = RequestContext(request)
+	graph = request.facebook
+	postDict = graph.get(postID);
+	print postDict	
+	return HttpResponse(json.dumps(postDict, ensure_ascii=False), mimetype="application/json")
+
+@facebook_required_lazy
 def query(request):
 
 	require_persistent_graph(request)
 	context = RequestContext(request)
 	print 'querying yo'
-	graph = request.facebook
-	feed_dict = graph.get('me/feed', limit=30)
+	
+	
+	# print response
+	response = {}
+	if request.POST:
+		formDict = request.POST
+		if formDict['query']:
+			query = formDict['query']
+			response = _query(query, request.facebook)
+		else:
+			response = {'error' : "Enter a search term", "count":0}
+
+	else:
+		response = {'error' : "Invalid Request, please refresh the page.", "count":0}
+	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
+
+def _query(query, graph):
+	
+
+	feed_dict = graph.get('me/feed', limit=25)
 
 	ids = []
 	for datum in feed_dict['data']:
@@ -176,9 +214,8 @@ def query(request):
 	
 	response = {}
 	response ['data'] = ids
-	response['count'] = 30
-	print response
-	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
+	response['count'] = 25
+	return response
 
 
 

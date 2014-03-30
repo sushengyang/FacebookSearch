@@ -2,3 +2,12 @@
 {
 	margin-top: 20px;
 }
+
+.profile-info {
+	margin-top: 1em;
+}
+
+.profile-image {
+	border-radius: 4px;
+	margin-right: 0.5em;
+}
