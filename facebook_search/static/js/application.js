@@ -5,7 +5,7 @@ reindexButton.submit(function () {
         url: reindexButton.attr('action'),
         data: reindexButton.serialize(),
         success: function (data) {
-            console.log(data);
+            // console.log(data);
         },
         error: function(data) {
             console.log (data);
@@ -21,7 +21,7 @@ $(document).ready(function(){
         url: '/profile-picture/',
         success: function (data) {
             var profilePicture = $("#profile-picture");
-            console.log (data);
+            // console.log (data);
             profilePicture.attr('src', data.data.url);
         },
         error: function(data) {
@@ -38,6 +38,7 @@ queryForm.submit(function () {
         data: queryForm.serialize(),
         success: function (data) {
             processSearchResults(data);
+            console.log (data);
         },
         error: function(data) {
             console.log ("error");
@@ -77,7 +78,7 @@ function processSearchResults (results)
         for (var i = 0; i < results.count; i++)
         {
             var postID = results.data[i];
-            console.log(postID);
+            // console.log(postID);
             html += generatePostPanel(postID);
             $.ajax({
                 type: 'get',
@@ -86,8 +87,8 @@ function processSearchResults (results)
                     udpatePostPanel(postData);
                 },
                 error: function(data) {
-                    console.log ("error");
-                    console.log (data);
+                    console.log ("error retrieving object");
+                    console.log (postID);
                 }
             });
             udpatePostPanel(postID);
@@ -110,11 +111,11 @@ function udpatePostPanel (postData)
             if (postData.to)
             {
                 
-                heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s wall:");    
+                heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s timeline.");    
             }
             else
             {
-                heading = generatePanelHeading(postData.from.name+" posted:");
+                heading = generatePanelHeading(postData.from.name+" posted.");
             }
             body = generatePanelBody(postData.message);
             postDiv.append(heading + body);
@@ -122,66 +123,83 @@ function udpatePostPanel (postData)
         else if (postData.story)
         {
             var storySplit = postData.story.split('"');
-            console.log (storySplit);
+            // console.log (storySplit);
             if (storySplit.length == 1)
             {
                 postDiv.remove();
+                console.log ('removing');
                 return;
             }
             
-            var comment = storySplit[1];
             if (postData.status_type && postData.status_type == "wall_post")
             {
+                var comment = storySplit[1];
                 heading = generatePanelHeading(postData.from.name +" posted"+ storySplit[storySplit.length-1]);
+                body = generatePanelBody(comment);
+                postDiv.append(heading + body);
             }
-            else
+
+            else // No comment related posts.
             {
-                heading = generatePanelHeading(postData.from.name +" commented"+ storySplit[storySplit.length-1]);
+                postDiv.remove();
+                console.log ('removing');
+                return;
+                // heading = generatePanelHeading(postData.from.name +" commented"+ storySplit[storySplit.length-1]);
             }
-            body = generatePanelBody(comment);
-            postDiv.append(heading + body);
+            
         }
     }
     else if (postData.type = "link") 
     {
         var heading, body;
-        if (postData.description)
+        if (postData.description || postData.message)
         {
-            body = generatePanelBody(postData.description);   
+            body = generatePanelBody(postData.description || postData.message);   
         }
-        if (postData.message)
+        
+        if (postData.status_type == "tagged_in_photo")
+            heading = generatePanelHeading(postData.story);
+        else if (postData.story || postData.name)
+            heading = generatePanelHeading(postData.from.name + " posted a link: " + (postData.story || postData.name));
+        else
         {
-            body = generatePanelBody(postData.message);
-        }
-        if (postData.story)
-        {
-            heading = generatePanelHeading("Link: "+postData.story);
-        }
-        else if (postData.name)
-        {
-            heading = generatePanelHeading("Link: "+postData.name);
-        }
+            console.log (postData);
+            postDiv.remove();
+        }    
+        //     if (postData.story)
+        // {
+        //     heading = generatePanelHeading(postData.from.name + " posted a link: " + postData.story);
+        // }
+        // else if (postData.name)
+        // {
+        //     heading = generatePanelHeading(postData.from.name + " posted a link: " + postData.name);
+        // }
+        if (!postData.from)
+            console.log (postData);
+
         postDiv.append(heading + body);
     }
     else if (postData.type = "photo") 
     {
         var heading, body;
-        if (postData.description)
-        {
-            body = generatePanelBody(postData.description);   
-        }
-        if (postData.message)
-        {
-            body = generatePanelBody(postData.message);
-        }
-        if (postData.story)
-        {
-            heading = generatePanelHeading("Photo: "+postData.story);
-        }
-        else if (postData.name)
-        {
-            heading = generatePanelHeading("Photo: "+postData.name);
-        }
+        // if (postData.description)
+        // {
+        body = generatePanelBody(postData.description || postData.message);   
+        // }
+        // if (postData.message)
+        // {
+        //     body = generatePanelBody(postData.message);
+        // }
+
+        heading = generatePanelHeading(postData.from.name + " posted a photo: " + (postData.story || postData.name));
+        // if (postData.story)
+        // {
+        //     heading = generatePanelHeading(postData.from.name + " posted a photo: " + postData.story);
+        // }
+        // else if (postData.name)
+        // {
+        //     heading = generatePanelHeading(postData.from.name + " posted a photo: " + postData.name);
+        // }
     }
     else if (postData.type = "video") 
     {
@@ -196,11 +214,11 @@ function udpatePostPanel (postData)
         }
         if (postData.story)
         {
-            heading = generatePanelHeading("Video: "+postData.story);
+            heading = generatePanelHeading(postData.from.name + " posted a video: " + postData.story);
         }
         else if (postData.name)
         {
-            heading = generatePanelHeading("Video: "+postData.name);
+            heading = generatePanelHeading(postData.from.name + " posted a video: " + postData.name);
         }
     }
 }

@@ -168,7 +168,7 @@ def getProfilePicture(request):
 	print 'getting profile picture yo'
 	graph = request.facebook
 	url = graph.get('me/picture', redirect = 0, height = 50, width = 50, type = 'normal')
-	print url
+	# print url
 	return HttpResponse(json.dumps(url, ensure_ascii=False), mimetype="application/json")
 
 
@@ -178,7 +178,7 @@ def getGraphPost (request, postID):
 	context = RequestContext(request)
 	graph = request.facebook
 	postDict = graph.get(postID);
-	print postDict	
+	# print postDict	
 	return HttpResponse(json.dumps(postDict, ensure_ascii=False), mimetype="application/json")
 
 @facebook_required_lazy
@@ -206,16 +206,27 @@ def query(request):
 def _query(query, graph):
 	
 
-	feed_dict = graph.get('me/feed', limit=25)
+	feed_dict = graph.get('me/feed', limit=1000)
 
-	ids = []
+	idList = []
 	for datum in feed_dict['data']:
-		ids.append(datum['id'])
-	
+		if datum['type'] in ['link', 'photo', 'video']:
+			if 'story' in datum and 'went to an event' in datum['story']:
+				continue
+			idList.append(datum['id'])
+		elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
+			idList.append(datum['id'])
+			
 	response = {}
-	response ['data'] = ids
-	response['count'] = 25
+	response ['data'] = idList
+	response['count'] = len(idList)
+	print response['count']
 	return response
 
 
 
+# from django.db import connection
+# def tables():
+# 	tables = connection.introspection.table_names()
+# 	seen_models = connection.introspection.installed_models(tables)
+# 	print tables
