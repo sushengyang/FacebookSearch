@@ -174,7 +174,13 @@ function udpatePostPanel (postData)
     else if (postData.type == "photo") 
     {
         var heading, body;
-        body = generatePanelBody(postData.message || postData.description);  
+        if (postData.message || postData.description)
+            body = generatePanelBody(postData.message || postData.description);  
+        else
+        {
+            postDiv.remove();
+            return;
+        }
         if (postData.to) 
             heading = generatePanelHeading(postData.from.name + " posted a photo to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
         else
@@ -185,7 +191,13 @@ function udpatePostPanel (postData)
     else if (postData.type == "video") 
     {
         var heading, body;
-        body = generatePanelBody(postData.message || postData.description);  
+        if (postData.message || postData.description)
+            body = generatePanelBody(postData.message || postData.description);  
+        else
+        {
+            postDiv.remove();
+            return;
+        }
         if (postData.to) 
             heading = generatePanelHeading(postData.from.name + " posted a video to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
         else

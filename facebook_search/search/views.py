@@ -225,4 +225,14 @@ def _query(query, graph):
 	response['count'] = len(idList)
 	return response
 
-def buildIndex
+def buildIndex(graph):
+	feed_dict = graph.get('me/feed', limit=200)
+	postsToIndex = []
+	for datum in feed_dict['data']:
+		if datum['type'] in ['link', 'photo', 'video']:
+			if datum['type'] == 'link' and 'message' not in datum:
+				continue
+			postsToIndex.append(datum['id'])
+		elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
+			postsToIndex.append(datum['id'])
+	
