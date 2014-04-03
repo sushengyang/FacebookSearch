@@ -146,80 +146,52 @@ function udpatePostPanel (postData)
                 return;
                 // heading = generatePanelHeading(postData.from.name +" commented"+ storySplit[storySplit.length-1]);
             }
-            
         }
     }
-    else if (postData.type = "link") 
+    else if (postData.type == "link") 
     {
         var heading, body;
-        if (postData.description || postData.message)
+        if (postData.message)
+            body = generatePanelBody(postData.message);   
+        else
         {
-            body = generatePanelBody(postData.description || postData.message);   
+            postDiv.remove();
+            return;
         }
-        
+
         if (postData.status_type == "tagged_in_photo")
             heading = generatePanelHeading(postData.story);
         else if (postData.story || postData.name)
             heading = generatePanelHeading(postData.from.name + " posted a link: " + (postData.story || postData.name));
         else
         {
+            heading = generatePanelHeading(postData.from.name + " posted a link: ");
             console.log (postData);
-            postDiv.remove();
         }    
-        //     if (postData.story)
-        // {
-        //     heading = generatePanelHeading(postData.from.name + " posted a link: " + postData.story);
-        // }
-        // else if (postData.name)
-        // {
-        //     heading = generatePanelHeading(postData.from.name + " posted a link: " + postData.name);
-        // }
-        if (!postData.from)
-            console.log (postData);
 
         postDiv.append(heading + body);
     }
-    else if (postData.type = "photo") 
+    else if (postData.type == "photo") 
     {
         var heading, body;
-        // if (postData.description)
-        // {
-        body = generatePanelBody(postData.description || postData.message);   
-        // }
-        // if (postData.message)
-        // {
-        //     body = generatePanelBody(postData.message);
-        // }
-
-        heading = generatePanelHeading(postData.from.name + " posted a photo: " + (postData.story || postData.name));
-        // if (postData.story)
-        // {
-        //     heading = generatePanelHeading(postData.from.name + " posted a photo: " + postData.story);
-        // }
-        // else if (postData.name)
-        // {
-        //     heading = generatePanelHeading(postData.from.name + " posted a photo: " + postData.name);
-        // }
+        body = generatePanelBody(postData.message || postData.description);  
+        if (postData.to) 
+            heading = generatePanelHeading(postData.from.name + " posted a photo to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
+        else
+            heading = generatePanelHeading(postData.from.name + " posted a photo");
+        // console.log (heading);
+        postDiv.append(heading + body);
     }
-    else if (postData.type = "video") 
+    else if (postData.type == "video") 
     {
         var heading, body;
-        if (postData.description)
-        {
-            body = generatePanelBody(postData.description);   
-        }
-        if (postData.message)
-        {
-            body = generatePanelBody(postData.message);
-        }
-        if (postData.story)
-        {
-            heading = generatePanelHeading(postData.from.name + " posted a video: " + postData.story);
-        }
-        else if (postData.name)
-        {
-            heading = generatePanelHeading(postData.from.name + " posted a video: " + postData.name);
-        }
+        body = generatePanelBody(postData.message || postData.description);  
+        if (postData.to) 
+            heading = generatePanelHeading(postData.from.name + " posted a video to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
+        else
+            heading = generatePanelHeading(postData.from.name + " posted a video");
+        // console.log (heading);
+        postDiv.append(heading + body);
     }
 }
 function generatePostPanel (postID)

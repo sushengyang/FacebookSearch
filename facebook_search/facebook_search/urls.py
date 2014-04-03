@@ -16,7 +16,7 @@ urlpatterns += patterns(
     'search.views',
     url(r'^connect/$', 'connect', name='facebook_connect'),
     url(r'^disconnect/$', 'disconnect', name='facebook_disconnect'),
-    url(r'^example/$', 'example', name='facebook_example'),
+    url(r'^$', 'home', name='home'),
     url(r'^reindex/$', 'reindex', name='reindex'),
     url(r'^query/$', 'query', name='query'),
     url(r'^profile-picture/$', 'getProfilePicture', name='profile-picture'),
