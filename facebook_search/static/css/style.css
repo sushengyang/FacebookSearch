@@ -22,3 +22,18 @@
 	word-break: break-all;
 	white-space: normal;
 }
+
+.panel-heading > a{
+	color: white;
+}
+
+.link-description
+{
+	font-size: 0.8em;
+}
+
+.post-img
+{
+	display: block;
+	margin: auto;
+}

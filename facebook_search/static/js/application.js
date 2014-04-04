@@ -111,11 +111,11 @@ function udpatePostPanel (postData)
             if (postData.to)
             {
                 
-                heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s timeline.");    
+                heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s timeline.", postData.id);    
             }
             else
             {
-                heading = generatePanelHeading(postData.from.name+" posted.");
+                heading = generatePanelHeading(postData.from.name+" posted.", postData.id);
             }
             body = generatePanelBody(postData.message);
             postDiv.append(heading + body);
@@ -123,7 +123,6 @@ function udpatePostPanel (postData)
         else if (postData.story)
         {
             var storySplit = postData.story.split('"');
-            // console.log (storySplit);
             if (storySplit.length == 1)
             {
                 postDiv.remove();
@@ -134,7 +133,7 @@ function udpatePostPanel (postData)
             if (postData.status_type && postData.status_type == "wall_post")
             {
                 var comment = storySplit[1];
-                heading = generatePanelHeading(postData.from.name +" posted"+ storySplit[storySplit.length-1]);
+                heading = generatePanelHeading(postData.from.name +" posted"+ storySplit[storySplit.length-1], postData.id);
                 body = generatePanelBody(comment);
                 postDiv.append(heading + body);
             }
@@ -152,20 +151,17 @@ function udpatePostPanel (postData)
     {
         var heading, body;
         if (postData.message)
-            body = generatePanelBody(postData.message);   
+            body = generateLinkAndVideoPanelBody(postData.message, postData.link, postData.picture, postData.description);   
         else
         {
             postDiv.remove();
             return;
         }
-
-        if (postData.status_type == "tagged_in_photo")
-            heading = generatePanelHeading(postData.story);
-        else if (postData.story || postData.name)
-            heading = generatePanelHeading(postData.from.name + " posted a link: " + (postData.story || postData.name));
+        if (postData.story || postData.name)
+            heading = generatePanelHeading(postData.from.name + " posted a link: " + (postData.story || postData.name), postData.id);
         else
         {
-            heading = generatePanelHeading(postData.from.name + " posted a link: ");
+            heading = generatePanelHeading(postData.from.name + " posted a link: ", postData.id);
             console.log (postData);
         }    
 
@@ -175,16 +171,16 @@ function udpatePostPanel (postData)
     {
         var heading, body;
         if (postData.message || postData.description)
-            body = generatePanelBody(postData.message || postData.description);  
+            body = generatePhotoPanelBody((postData.message || postData.description), postData.link, postData.picture);  
         else
         {
             postDiv.remove();
             return;
         }
         if (postData.to) 
-            heading = generatePanelHeading(postData.from.name + " posted a photo to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
+            heading = generatePanelHeading(postData.from.name + " posted a photo to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline", postData.id);
         else
-            heading = generatePanelHeading(postData.from.name + " posted a photo");
+            heading = generatePanelHeading(postData.from.name + " posted a photo", postData.id);
         // console.log (heading);
         postDiv.append(heading + body);
     }
@@ -192,16 +188,17 @@ function udpatePostPanel (postData)
     {
         var heading, body;
         if (postData.message || postData.description)
-            body = generatePanelBody(postData.message || postData.description);  
+            // body = generatePanelBody(postData.message || postData.description);  
+            body = generateLinkAndVideoPanelBody((postData.message || postData.description), postData.link, postData.picture, (postData.description || "No description found."));   
         else
         {
             postDiv.remove();
             return;
         }
         if (postData.to) 
-            heading = generatePanelHeading(postData.from.name + " posted a video to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline");
+            heading = generatePanelHeading(postData.from.name + " posted a video to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline", postData.id);
         else
-            heading = generatePanelHeading(postData.from.name + " posted a video");
+            heading = generatePanelHeading(postData.from.name + " posted a video", postData.id);
         // console.log (heading);
         postDiv.append(heading + body);
     }
@@ -219,11 +216,23 @@ function generateDangerPanel (message)
 {
     return '<div class="panel panel-danger"><div class="panel-heading">'+message+'</div></div>';
 }
-function generatePanelHeading (message)
+function generatePanelHeading (message, id)
 {
-    return '<div class="panel-heading">'+message+'</div>';
+    idSplit = id.split('_');
+    link = "https:facebook.com/" + idSplit[0] + '/posts/'+ idSplit[1];
+    return '<div class="panel-heading"><a target="_blank" href = "'+ link +'">'+message+'</a></div>';
 }
 function generatePanelBody (message)
 {
     return '<div class="panel-body word-wrap">'+message+'</div>';
+}
+
+function generateLinkAndVideoPanelBody (message, link, pictureSource, description)
+{
+    return '<div class="panel-body">' + message + '<hr><a href="'+ link + '"><div class="row"><div class="col-md-2"><img class="img-rounded img-responsive" src="'+pictureSource+'"></div><div class="col-md-10"><div class="well link-description">'+description.replace(/'/g,"\\\'")+'</div></div></div></a></div>';
+}
+
+function generatePhotoPanelBody (message, link, pictureSource)
+{
+    return '<div class="panel-body">'+message+'<hr><a href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a></div>';
 }
