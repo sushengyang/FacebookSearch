@@ -5,7 +5,7 @@ reindexButton.submit(function () {
         url: reindexButton.attr('action'),
         data: reindexButton.serialize(),
         success: function (data) {
-            // console.log(data);
+            console.log(data);
         },
         error: function(data) {
             console.log (data);

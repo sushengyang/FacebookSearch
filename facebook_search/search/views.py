@@ -19,7 +19,7 @@ import logging
 from open_facebook.api import OpenFacebook
 from django_facebook.api import get_persistent_graph, require_persistent_graph
 import json
-from search.models import InvertedIndex
+from search.models import *
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,8 @@ def reindex(request):
 	context = RequestContext(request)
 	print 'reindexing yo'
 	graph = request.facebook
-	print graph.get('me/feed')
+	user = request.user
+	saveUserPosts(graph, user)
 	return HttpResponse("Done yo!")
 
 @facebook_required_lazy
@@ -180,8 +181,7 @@ def getGraphPost (request, postID):
 	require_persistent_graph(request)
 	context = RequestContext(request)
 	graph = request.facebook
-	postDict = graph.get(postID);
-	# print postDict	
+	postDict = graph.get(postID)
 	return HttpResponse(json.dumps(postDict, ensure_ascii=False), mimetype="application/json")
 
 @facebook_required_lazy
@@ -225,14 +225,52 @@ def _query(query, graph):
 	response['count'] = len(idList)
 	return response
 
-def buildIndex(graph):
+def buildIndex(graph, user):
+
 	feed_dict = graph.get('me/feed', limit=200)
-	postsToIndex = []
-	for datum in feed_dict['data']:
-		if datum['type'] in ['link', 'photo', 'video']:
+	for datum in feed_dict['data']:		
+		if datum['type'] in ['photo', 'video']:
 			if datum['type'] == 'link' and 'message' not in datum:
 				continue
-			postsToIndex.append(datum['id'])
+			postsToIndex.append(datum)
+		elif datum['type'] == ['link']:
+			if datum['type'] == 'link' and 'message' not in datum:
+				continue
+			postsToIndex.append(datum)
 		elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
-			postsToIndex.append(datum['id'])
+			postsToIndex.append(datum)
 	
+	invIndex = InvertedIndex.objects.get(userID = user.id)
+	invIndex.invertedIndex = {'a':1, 'b':2}
+	invIndex.save()
+
+def saveUserPosts (graph, user):
+	feed_dict = graph.get('me/feed', limit=200)
+	for datum in feed_dict['data']:
+		if datum['type'] in ['photo', 'link', 'video']:
+			if 'message' in datum:
+				addPostForUser(datum['message'], user.id, datum['id'])
+			elif 'description' in datum and datum['type'] != 'link':
+				addPostForUser(datum['description'], user.id, datum['id'])
+		elif datum['type'] == 'status':
+			if 'message' in datum:
+				addPostForUser(datum['message'], user.id, datum['id'])
+			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
+				storySplit = datum['story'].split('"')
+				if len(storySplit) == 1:
+					continue
+				addPostForUser("".join(storySplit[1:len(storySplit)-1]), user.id, datum['id'])
+
+def addPostForUser (postText, userID, postID):
+	posts = Post.objects.filter(postID = postID).filter(userID = userID)
+	if len(posts) > 0:
+		return
+	# print postText
+	post = Post(userID = userID, text = postText, postID = postID)
+	post.save()
+
+
+
+
+
+
