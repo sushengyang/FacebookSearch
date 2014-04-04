@@ -19,6 +19,7 @@ urlpatterns += patterns(
     url(r'^$', 'home', name='home'),
     url(r'^reindex/$', 'reindex', name='reindex'),
     url(r'^query/$', 'query', name='query'),
-    url(r'^profile-picture/$', 'getProfilePicture', name='profile-picture'),
-    url(r'^graph-post/(?P<postID>[0-9_]+)/$', 'getGraphPost', name='graph-post'),
+    url(r'^profile-picture/$', 'getProfilePicture', name='profile_picture'),
+    url(r'^graph-post/(?P<postID>[0-9_]+)/$', 'getGraphPost', name='graph_post'),
+	url(r'^inverted-index/(?P<userID>\d+)/$', 'getInvertedIndex', name='inverted_index'),
 )
