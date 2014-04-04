@@ -20,6 +20,7 @@ from open_facebook.api import OpenFacebook
 from django_facebook.api import get_persistent_graph, require_persistent_graph
 import json
 from search.models import *
+from urlparse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +113,7 @@ def _connect(request, graph):
 			messages.info(request, _("You have connected your account "
 									 "to %s's facebook profile") % facebook_data['name'])
 		elif action is CONNECT_ACTIONS.REGISTER:
-			invertedIndex = InvertedIndex(userID = user.id)
+			invertedIndex = InvertedIndex(userID = user.id, invertedIndex = {}, lastPostTime = "", numberOfPosts = 0)
 			invertedIndex.save()
 			# hook for tying in specific post registration functionality
 			response.set_cookie('fresh_registration', user.id)
@@ -162,7 +163,8 @@ def reindex(request):
 	print 'reindexing yo'
 	graph = request.facebook
 	user = request.user
-	saveUserPosts(graph, user)
+	buildIndex(graph, user)
+	# saveUserPosts(graph, user)
 	return HttpResponse("Done yo!")
 
 @facebook_required_lazy
@@ -174,7 +176,6 @@ def getProfilePicture(request):
 	url = graph.get('me/picture', redirect = 0, height = 50, width = 50, type = 'normal')
 	# print url
 	return HttpResponse(json.dumps(url, ensure_ascii=False), mimetype="application/json")
-
 
 @facebook_required_lazy
 def getGraphPost (request, postID):
@@ -191,7 +192,6 @@ def query(request):
 	context = RequestContext(request)
 	print 'querying yo'
 	
-	
 	# print response
 	response = {}
 	if request.POST:
@@ -206,8 +206,8 @@ def query(request):
 		response = {'error' : "Invalid Request, please refresh the page.", "count":0}
 	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
 
-def _query(query, graph):
-	
+
+def _query(query, graph):	
 
 	feed_dict = graph.get('me/feed', limit=25)
 	print len(feed_dict['data'])
@@ -227,26 +227,103 @@ def _query(query, graph):
 
 def buildIndex(graph, user):
 
-	feed_dict = graph.get('me/feed', limit=200)
-	for datum in feed_dict['data']:		
-		if datum['type'] in ['photo', 'video']:
-			if datum['type'] == 'link' and 'message' not in datum:
-				continue
-			postsToIndex.append(datum)
-		elif datum['type'] == ['link']:
-			if datum['type'] == 'link' and 'message' not in datum:
-				continue
-			postsToIndex.append(datum)
-		elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
-			postsToIndex.append(datum)
+	feedDict = graph.get('me/feed', limit=200)
+	newLastPostTime = feedDict['data'][0]['created_time']
+	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
+	lastPostTime = invertedIndexObject.lastPostTime
+	if lastPostTime == "":
+		while len(feedDict['data']) > 0 and invertedIndexObject.numberOfPosts < 1000:
+			# index them
+			print 'indexing some posts'
+			indexFeed (feedDict, user)
+			# get next 200 posts
+			url = feedDict["paging"]["next"]
+			queries = parse_qs(urlparse(url).query, keep_blank_values=True)
+			if 'until' not in queries:
+				break
+			feedDict = graph.get('me/feed', limit=200, until = int(queries['until'][0]))
+			invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
+	else:
+		print 'reindex code is not there yet'
+		while indexFeedTill(feedDict, user, lastPostTime) == False:
+			feedDict = graph.get('me/feed', limit=200, until = int(queries['until'][0]))
 	
-	invIndex = InvertedIndex.objects.get(userID = user.id)
-	invIndex.invertedIndex = {'a':1, 'b':2}
-	invIndex.save()
+	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
+	invertedIndexObject.lastPostTime = newLastPostTime
+	invertedIndexObject.save()
+
+def indexFeed(feedDict, user):
+	
+	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
+	invertedIndex = invertedIndexObject.invertedIndex
+	count = 0
+	for datum in feedDict['data']:
+		index = {}
+		if datum['type'] in ['photo', 'link', 'video']:
+			if 'message' in datum:
+				index = indexForPost(datum['message'], datum['id'])
+				count = count + 1
+			elif 'description' in datum and datum['type'] != 'link':
+				index = indexForPost(datum['description'], datum['id'])
+				count = count + 1
+		elif datum['type'] == 'status':
+			if 'message' in datum:
+				index = indexForPost(datum['message'], datum['id'])
+				count = count + 1
+			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
+				storySplit = datum['story'].split('"')
+				if len(storySplit) == 1:
+					continue
+				index = indexForPost("".join(storySplit[1:len(storySplit)-1]), datum['id'])
+				count = count + 1
+		# merging
+		if index != {}: 
+			for key in index:
+				if key in invertedIndex:
+					invertedIndex[key][datum['id']] = index[key][datum['id']]
+				else:
+					invertedIndex[key] = {datum['id'] : index[key][datum['id']]}	
+	
+	invertedIndexObject.numberOfPosts = invertedIndexObject.numberOfPosts + count
+	invertedIndexObject.save()
+	print 'indexed some posts'
+
+def indexFeedTill (feedDict, user, time):
+	if feedDict['data'][len(feedDict['data']) - 1]['created_time'] > time:
+		indexFeed (feedDict, user)
+		print 'added all posts'
+		return False 
+	else:
+		prunedDict = {'data' : []}
+		for datum in feedDict['data']:
+			if datum['created_time'] > time:
+				prunedDict['data'].append(datum)
+			else:
+				break
+		indexFeed (prunedDict, user)
+		print 'added some posts'
+		return True
+
+def indexForPost (postText, postID):
+	index = {}
+	words = preprocess(postText).split(' ')
+	for i in range(0, len(words)):
+		word = words[i]
+		if word in index:
+			if(postID in index[word]):
+				index[word][postID].append(i)
+			else:
+				index[word][postID] = [i]
+		else:
+			index[word] = {postID : [i]}
+	return index
+
+def preprocess (postText):
+	return postText
 
 def saveUserPosts (graph, user):
-	feed_dict = graph.get('me/feed', limit=200)
-	for datum in feed_dict['data']:
+	feedDict = graph.get('me/feed', limit=200)
+	for datum in feedDict['data']:
 		if datum['type'] in ['photo', 'link', 'video']:
 			if 'message' in datum:
 				addPostForUser(datum['message'], user.id, datum['id'])
@@ -269,8 +346,6 @@ def addPostForUser (postText, userID, postID):
 	post = Post(userID = userID, text = postText, postID = postID)
 	post.save()
 
-
-
-
-
-
+def getInvertedIndex (request, userID):
+	invertedIndex = InvertedIndex.objects.get(userID = userID)
+	return HttpResponse(json.dumps(invertedIndex.invertedIndex, ensure_ascii=False), mimetype="application/json")	

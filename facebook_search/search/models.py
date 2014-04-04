@@ -5,7 +5,8 @@ from jsonfield import JSONField
 class InvertedIndex(models.Model):
 	userID = models.IntegerField()
 	invertedIndex = JSONField(null = True)
-	lastPost = models.CharField(max_length=50, blank = True, null = True)
+	lastPostTime = models.CharField(max_length=50, blank = True, null = True)
+	numberOfPosts = models.IntegerField()
 	
 class Post (models.Model):
 	userID = models.IntegerField()
