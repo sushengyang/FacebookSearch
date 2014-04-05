@@ -261,28 +261,21 @@ def indexFeed(feedDict, user):
 		index = {}
 		if datum['type'] in ['photo', 'link', 'video']:
 			if 'message' in datum:
-				index = indexForPost(datum['message'], datum['id'])
+				addToIndex(invertedIndex, datum['message'], datum['id'])
 				count = count + 1
 			elif 'description' in datum and datum['type'] != 'link':
-				index = indexForPost(datum['description'], datum['id'])
+				addToIndex(invertedIndex, datum['description'], datum['id'])
 				count = count + 1
 		elif datum['type'] == 'status':
 			if 'message' in datum:
-				index = indexForPost(datum['message'], datum['id'])
+				addToIndex(invertedIndex, datum['message'], datum['id'])
 				count = count + 1
 			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
 				storySplit = datum['story'].split('"')
 				if len(storySplit) == 1:
 					continue
-				index = indexForPost("".join(storySplit[1:len(storySplit)-1]), datum['id'])
+				addToIndex(invertedIndex, "".join(storySplit[1:len(storySplit)-1]), datum['id'])
 				count = count + 1
-		# merging
-		if index != {}: 
-			for key in index:
-				if key in invertedIndex:
-					invertedIndex[key][datum['id']] = index[key][datum['id']]
-				else:
-					invertedIndex[key] = {datum['id'] : index[key][datum['id']]}	
 	
 	invertedIndexObject.numberOfPosts = invertedIndexObject.numberOfPosts + count
 	invertedIndexObject.save()
@@ -304,8 +297,7 @@ def indexFeedTill (feedDict, user, time):
 		print 'added some posts'
 		return True
 
-def indexForPost (postText, postID):
-	index = {}
+def addToIndex(index, postText, postID):
 	words = preprocess(postText).split(' ')
 	for i in range(0, len(words)):
 		word = words[i]
@@ -316,7 +308,6 @@ def indexForPost (postText, postID):
 				index[word][postID] = [i]
 		else:
 			index[word] = {postID : [i]}
-	return index
 
 def preprocess (postText):
 	return postText
@@ -342,10 +333,15 @@ def addPostForUser (postText, userID, postID):
 	posts = Post.objects.filter(postID = postID).filter(userID = userID)
 	if len(posts) > 0:
 		return
-	# print postText
 	post = Post(userID = userID, text = postText, postID = postID)
 	post.save()
 
 def getInvertedIndex (request, userID):
 	invertedIndex = InvertedIndex.objects.get(userID = userID)
 	return HttpResponse(json.dumps(invertedIndex.invertedIndex, ensure_ascii=False), mimetype="application/json")	
+
+
+
+
+
+
