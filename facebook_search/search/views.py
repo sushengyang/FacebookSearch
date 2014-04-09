@@ -198,7 +198,7 @@ def query(request):
 		formDict = request.POST
 		if formDict['query']:
 			query = formDict['query']
-			response = _query(query, request.facebook)
+			response = _query(query, request.user)
 		else:
 			response = {'error' : "Enter a search term", "count":0}
 
@@ -207,23 +207,56 @@ def query(request):
 	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
 
 
-def _query(query, graph):	
+def _query(query, user):	
 
-	feed_dict = graph.get('me/feed', limit=25)
-	print len(feed_dict['data'])
-	idList = []
-	for datum in feed_dict['data']:
-		if datum['type'] in ['link', 'photo', 'video']:
-			if 'story' in datum and 'went to an event' in datum['story']:
-				continue
-			idList.append(datum['id'])
-		elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
-			idList.append(datum['id'])
+	# feed_dict = graph.get('me/feed', limit=25)
+	# print len(feed_dict['data'])
+	# idList = []
+	# for datum in feed_dict['data']:
+	# 	if datum['type'] in ['link', 'photo', 'video']:
+	# 		if 'story' in datum and 'went to an event' in datum['story']:
+	# 			continue
+	# 		idList.append(datum['id'])
+	# 	elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
+	# 		idList.append(datum['id'])
 			
-	response = {}
-	response ['data'] = idList
-	response['count'] = len(idList)
+	# response = {}
+	# response ['data'] = idList
+	# response['count'] = len(idList)
+
+	invertedIndexObject = InvertedIndex.objects.get (userID = user.id)
+	invertedIndex = invertedIndexObject.invertedIndex
+	
+	posts = []
+	terms = preprocess(query)
+	for term in terms:
+		posts.extend(invertedIndex[term].keys()) #to flatten
+
+	response = {"list":posts}
 	return response
+
+def scoreForPost(query, postID, invertedIndex):
+	words = getPostWordsForPostID (postID, user)
+	queryTerms = preprocess(query)
+	# for i in range (0:len(words) - len(queryTerms)):
+	# 	if words[i] == queryTerms[i]
+
+	termFreq
+
+
+def getPostWordsForPostID(postID, invertedIndex):
+	postWords = {}
+	for word in invertedIndex:
+		if postID in invertedIndex[word]:
+			positions = invertedIndex[word][postID]
+			for position in positions:
+				postWords[position] = word
+	
+	orderedWords = []
+	for position in sorted(postWords.keys()):
+		orderedWords.append(postWords[position])
+	
+	return orderedWords
 
 def buildIndex(graph, user):
 
@@ -298,7 +331,7 @@ def indexFeedTill (feedDict, user, time):
 		return True
 
 def addToIndex(index, postText, postID):
-	words = preprocess(postText).split(' ')
+	words = preprocess(postText)
 	for i in range(0, len(words)):
 		word = words[i]
 		if word in index:
@@ -310,31 +343,24 @@ def addToIndex(index, postText, postID):
 			index[word] = {postID : [i]}
 
 def preprocess (postText):
-	return postText
+	return postText.split(' ')
 
-def saveUserPosts (graph, user):
-	feedDict = graph.get('me/feed', limit=200)
-	for datum in feedDict['data']:
-		if datum['type'] in ['photo', 'link', 'video']:
-			if 'message' in datum:
-				addPostForUser(datum['message'], user.id, datum['id'])
-			elif 'description' in datum and datum['type'] != 'link':
-				addPostForUser(datum['description'], user.id, datum['id'])
-		elif datum['type'] == 'status':
-			if 'message' in datum:
-				addPostForUser(datum['message'], user.id, datum['id'])
-			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
-				storySplit = datum['story'].split('"')
-				if len(storySplit) == 1:
-					continue
-				addPostForUser("".join(storySplit[1:len(storySplit)-1]), user.id, datum['id'])
-
-def addPostForUser (postText, userID, postID):
-	posts = Post.objects.filter(postID = postID).filter(userID = userID)
-	if len(posts) > 0:
-		return
-	post = Post(userID = userID, text = postText, postID = postID)
-	post.save()
+# def saveUserPosts (graph, user):
+# 	feedDict = graph.get('me/feed', limit=200)
+# 	for datum in feedDict['data']:
+# 		if datum['type'] in ['photo', 'link', 'video']:
+# 			if 'message' in datum:
+# 				addPostForUser(datum['message'], user.id, datum['id'])
+# 			elif 'description' in datum and datum['type'] != 'link':
+# 				addPostForUser(datum['description'], user.id, datum['id'])
+# 		elif datum['type'] == 'status':
+# 			if 'message' in datum:
+# 				addPostForUser(datum['message'], user.id, datum['id'])
+# 			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
+# 				storySplit = datum['story'].split('"')
+# 				if len(storySplit) == 1:
+# 					continue
+# 				addPostForUser("".join(storySplit[1:len(storySplit)-1]), user.id, datum['id'])
 
 def getInvertedIndex (request, userID):
 	invertedIndex = InvertedIndex.objects.get(userID = userID)

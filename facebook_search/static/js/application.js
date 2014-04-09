@@ -229,10 +229,10 @@ function generatePanelBody (message)
 
 function generateLinkAndVideoPanelBody (message, link, pictureSource, description)
 {
-    return '<div class="panel-body">' + message + '<hr><a href="'+ link + '"><div class="row"><div class="col-md-2"><img class="img-rounded img-responsive" src="'+pictureSource+'"></div><div class="col-md-10"><div class="well link-description">'+description.replace(/'/g,"\\\'")+'</div></div></div></a></div>';
+    return '<div class="panel-body">' + message + '<hr><a target="_blank" href="'+ link + '"><div class="row"><div class="col-md-2"><img class="img-rounded img-responsive" src="'+pictureSource+'"></div><div class="col-md-10"><div class="well link-description">'+description.replace(/'/g,"\\\'")+'</div></div></div></a></div>';
 }
 
 function generatePhotoPanelBody (message, link, pictureSource)
 {
-    return '<div class="panel-body">'+message+'<hr><a href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a></div>';
+    return '<div class="panel-body">'+message+'<hr><a target="_blank" href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a></div>';
 }
