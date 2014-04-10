@@ -9,7 +9,7 @@ from django.views.decorators.http import require_POST
 from django_facebook import exceptions as facebook_exceptions, \
 	settings as facebook_settings
 from django_facebook.connect import CONNECT_ACTIONS, connect_user
-from django_facebook.decorators import facebook_required_lazy
+from django_facebook.decorators import facebook_required_lazy, facebook_required
 from django_facebook.utils import next_redirect, get_registration_backend, \
 	to_bool, error_next_redirect, get_instance_for
 from open_facebook import exceptions as open_facebook_exceptions
@@ -26,13 +26,14 @@ from collections import defaultdict
 import math
 import nltk
 import string, re
-from nltk.stem import PorterStemmer
+from nltk.stem.wordnet import WordNetLemmatizer
+nltk.data.path.append('./nltk_data/')
 
 logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
-@facebook_required_lazy
+@facebook_required(scope=['read_stream', 'email', 'user_about_me', 'user_birthday', 'user_website'])
 def connect(request, graph):
 	'''
 	Exception and validation functionality around the _connect view
@@ -159,7 +160,7 @@ def logout(request):
 	django_logout(request)
 	return HttpResponseRedirect("/")
 
-@facebook_required_lazy
+@facebook_required(scope=['read_stream', 'email', 'user_about_me'])
 def home(request):
 	require_persistent_graph(request)
 	context = RequestContext(request)
@@ -173,7 +174,7 @@ def home(request):
 	return render_to_response('home.html', context)
   
 	
-@facebook_required_lazy
+@facebook_required(scope=['read_stream', 'email', 'user_about_me'])
 def reindex(request):
 
 	require_persistent_graph(request)
@@ -195,7 +196,7 @@ def getProfilePicture(request):
 	# print url
 	return HttpResponse(json.dumps(url, ensure_ascii=False), mimetype="application/json")
 
-@facebook_required_lazy
+@facebook_required(scope=['read_stream', 'email', 'user_about_me'])
 def getGraphPost (request, postID):
 	require_persistent_graph(request)
 	context = RequestContext(request)
@@ -203,7 +204,6 @@ def getGraphPost (request, postID):
 	postDict = graph.get(postID)
 	return HttpResponse(json.dumps(postDict, ensure_ascii=False), mimetype="application/json")
 
-@facebook_required_lazy
 def query(request):
 
 	require_persistent_graph(request)
@@ -248,23 +248,22 @@ def _query(query, user):
 	
 	posts = []
 	terms = preprocess(query)
+	toRemove = []
 	for term in terms:
 		if term in invertedIndex:
 			posts.extend(invertedIndex[term].keys())
+		else:
+			toRemove.append (term)
+
+	for term in toRemove:
+		terms.remove(term)
+
 	posts = list(set(posts))
 	posts = querySearch(terms, invertedIndex, posts)
 	response = {}
 	response ['data'] = posts
 	response['count'] = len(posts)
 	return response
-
-def scoreForPost(query, postID, invertedIndex):
-	words = getPostWordsForPostID (postID, user)
-	queryTerms = preprocess(query)
-	# for i in range (0:len(words) - len(queryTerms)):
-	# 	if words[i] == queryTerms[i]
-
-	termFreq
 
 
 def getPostWordsForPostID(postID, invertedIndex):
@@ -364,7 +363,7 @@ def addToIndex(index, postText, postID):
 			index[word] = {postID : [i]}
 
 def preprocess(text):
-	stemmer = PorterStemmer()
+	lemmatizer = WordNetLemmatizer()
 	words = []
 
 	# Removing Punctuation and Special Characters
@@ -378,27 +377,10 @@ def preprocess(text):
 	# Stemming and Removal of Stopwords
 	terms = text.split()
 	for term in terms:
-		lemmatizedTerm = stemmer.stem(term.lower())
+		lemmatizedTerm = lemmatizer.lemmatize(term.lower())
 		words.append(lemmatizedTerm.lower())
 
 	return words
-
-# def saveUserPosts (graph, user):
-# 	feedDict = graph.get('me/feed', limit=200)
-# 	for datum in feedDict['data']:
-# 		if datum['type'] in ['photo', 'link', 'video']:
-# 			if 'message' in datum:
-# 				addPostForUser(datum['message'], user.id, datum['id'])
-# 			elif 'description' in datum and datum['type'] != 'link':
-# 				addPostForUser(datum['description'], user.id, datum['id'])
-# 		elif datum['type'] == 'status':
-# 			if 'message' in datum:
-# 				addPostForUser(datum['message'], user.id, datum['id'])
-# 			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
-# 				storySplit = datum['story'].split('"')
-# 				if len(storySplit) == 1:
-# 					continue
-# 				addPostForUser("".join(storySplit[1:len(storySplit)-1]), user.id, datum['id'])
 
 def getInvertedIndex (request, userID):
 	invertedIndex = InvertedIndex.objects.get(userID = userID)
@@ -412,64 +394,63 @@ Querying methods
 ------------------------------------------------------
 """
 def querySearch(query, index, documents):
-    print 'starting search'
-    queryDictionary = set(query)
-    print len(queryDictionary)
-    document_frequency = defaultdict(int)
-    length = defaultdict(float)
-    characters = " .,!#$%^&*();:\n\t\\\"?!{}[]<>"
-    initialize_document_frequencies(queryDictionary, index, document_frequency)
-    print 'got df'
-    initialize_lengths(queryDictionary, length, index, documents, document_frequency)
-    documents = search(queryDictionary, documents, document_frequency, index, length)
-    print 'search complete'
-    for doc in documents:
-    	print doc
-    return documents
+	print 'starting search'
+	queryDictionary = set(query)
+	# print len(queryDictionary)
+	document_frequency = defaultdict(int)
+	length = defaultdict(float)
+	characters = " .,!#$%^&*();:\n\t\\\"?!{}[]<>"
+	initialize_document_frequencies(queryDictionary, index, document_frequency)
+	# print 'got df'
+	initialize_lengths(queryDictionary, length, index, documents, document_frequency)
+	documents = search(queryDictionary, documents, document_frequency, index, length)
+	print 'search complete'
+	
+	return documents
 
 def initialize_document_frequencies(queryDictionary, index, document_frequency):
-    for term in queryDictionary:
-        document_frequency[term] = len(index[term].keys())
+	for term in queryDictionary:
+		document_frequency[term] = len(index[term].keys())
 
 def initialize_lengths(queryDictionary, length, index, documents, document_frequency):
-    print 'get lengths'
-    for id in documents:
-        print id
-        l = 0
-        for term in queryDictionary:
-            l += imp(term,id, index, queryDictionary, document_frequency)**2
-        length[id] = math.sqrt(l)
+	# print 'get lengths'
+	for id in documents:
+		# print id
+		l = 0
+		for term in queryDictionary:
+			l += imp(term,id, index, queryDictionary, document_frequency)**2
+		length[id] = math.sqrt(l)
 
 def imp(term,id, index, queryDictionary, document_frequency):
-    if id in index[term].keys():
-        return len(index[term][id])*inverse_document_frequency(term, queryDictionary, document_frequency)
-    else:
-        return 0.0
+	if id in index[term].keys():
+		return len(index[term][id])*inverse_document_frequency(term, queryDictionary, document_frequency)
+	else:
+		return 0.0
 
 def inverse_document_frequency(term, queryDictionary, document_frequency):
-    if term in queryDictionary:
-        return math.log(1000/document_frequency[term],2)
-    else:
-        return 0.0
+	if term in queryDictionary:
+		return math.log(1000/document_frequency[term],2)
+	else:
+		return 0.0
 
 def search(queryDictionary, documents, document_frequency, index, length):
-    scores = sorted([(id,similarity(queryDictionary,id, document_frequency, index, length))
-                     for id in documents],
-                    key=lambda x: x[1],
-                    reverse=True)
-    sortedPosts = []
-    for score in scores:
-        if score[1] > 6:
-            sortedPosts.append(score[0])
-    print len(sortedPosts)
-    return sortedPosts
+	scores = sorted([(id,similarity(queryDictionary,id, document_frequency, index, length))
+					 for id in documents],
+					key=lambda x: x[1],
+					reverse=True)
+	sortedPosts = []
+	for score in scores:
+		# if score[1] > 6:
+		sortedPosts.append(score[0])
+	# print len(sortedPosts)
+	return sortedPosts
 
 def intersection(sets):
-    return reduce(set.intersection, [s for s in sets])
+	return reduce(set.intersection, [s for s in sets])
 
 def similarity(queryDictionary,id, document_frequency, index, length):
-    similarity = 0.0
-    for term in queryDictionary:
-        similarity += inverse_document_frequency(term, queryDictionary, document_frequency)*imp(term,id, index, queryDictionary, document_frequency)
-    similarity = similarity / length[id]
-    return similarity
+	similarity = 0.0
+	for term in queryDictionary:
+		similarity += inverse_document_frequency(term, queryDictionary, document_frequency)*imp(term,id, index, queryDictionary, document_frequency)
+	similarity = similarity / length[id]
+	return similarity

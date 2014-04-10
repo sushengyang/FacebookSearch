@@ -115,13 +115,14 @@ function processSearchResults (results)
 				url: '/graph-post/'+postID+'/',
 				success: function (postData) {
 					udpatePostPanel(postData);
+					jQuery("abbr.timeago").timeago();
 				},
 				error: function(data) {
 					console.log ("error retrieving object");
 					console.log (postID);
 				}
 			});
-			udpatePostPanel(postID);
+			// udpatePostPanel(postID);
 
 		}
 		html += '</div>';
@@ -166,7 +167,6 @@ function udpatePostPanel (postData)
 				heading = generatePanelHeading(postData.from.name +" posted"+ storySplit[storySplit.length-1], postData.id);
 				body = generatePanelBody(comment, postData.created_time);
 				postDiv.append(heading + body);
-				console.log (storySplit);
 			}
 
 			else // No comment related posts.
@@ -182,7 +182,7 @@ function udpatePostPanel (postData)
 	{
 		var heading, body;
 		if (postData.message)
-			body = generateLinkAndVideoPanelBody(postData.message, postData.link, postData.picture, postData.description, postData.created_time);   
+			body = generateLinkAndVideoPanelBody(postData.message, postData.link, postData.picture, (postData.description||"No description found."), postData.created_time);   
 		else
 		{
 			postDiv.remove();
@@ -208,7 +208,9 @@ function udpatePostPanel (postData)
 			postDiv.remove();
 			return;
 		}
-		if (postData.to) 
+		if (postData.status_type === "tagged_in_photo")
+			heading = generatePanelHeading(postData.story, postData.id);
+		else if (postData.to) 
 			heading = generatePanelHeading(postData.from.name + " posted a photo to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline", postData.id);
 		else
 			heading = generatePanelHeading(postData.from.name + " posted a photo", postData.id);
@@ -261,22 +263,23 @@ function generatePanelHeading (message, id)
 	link = "https:facebook.com/" + idSplit[0] + '/posts/'+ idSplit[1];
 	return '<div class="panel-heading"><a target="_blank" href = "'+ link +'">'+message+'</a></div>';
 }
+
 function generatePanelBody (message, timestamp)
 {
-	var datetime = new Date (timestamp)
-	return '<div class="panel-body word-wrap"><p>'+processMessage(message)+'</p><hr><small>Posted '+$.timeago(datetime)+'</small></div>';
+	return '<div class="panel-body word-wrap"><p>'+processMessage(message)+'</p><hr><small>Posted <abbr class="timeago" title="'+timestamp+'"></abbr></small></div>';
 }
 
 function generateLinkAndVideoPanelBody (message, link, pictureSource, description, timestamp)
 {
-	var datetime = new Date (timestamp);
-	return '<div class="panel-body"><p>'+processMessage(message)+'</p><hr><a target="_blank" href="'+ link + '"><div class="row"><div class="col-md-2"><img class="img-rounded img-responsive" src="'+pictureSource+'"></div><div class="col-md-10"><div class="well link-description">'+processMessage(description)+'</div></div></div></a><hr><small>Posted '+$.timeago(datetime)+'</small></div>';
+	// console.log (message);
+	processMessage(message);
+	// console.log ("yo");
+	return '<div class="panel-body"><p>'+processMessage(message)+'</p><hr><a target="_blank" href="'+ link + '"><div class="row"><div class="col-md-2"><img class="img-rounded img-responsive" src="'+pictureSource+'"></div><div class="col-md-10"><div class="well link-description">'+processMessage(description)+'</div></div></div></a><hr><small>Posted <abbr class="timeago" title="'+timestamp+'"></abbr></small></div>';
 }
 
 function generatePhotoPanelBody (message, link, pictureSource, timestamp)
 {
-	var datetime = new Date (timestamp);
-	return '<div class="panel-body"><p>'+processMessage(message)+'</p><hr><a target="_blank" href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a><hr><small>Posted '+$.timeago(datetime)+'</small></div>';
+	return '<div class="panel-body"><p>'+processMessage(message)+'</p><hr><a target="_blank" href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a><hr><small>Posted <abbr class="timeago" title="'+timestamp+'"></abbr></small></div>';
 }
 
 
