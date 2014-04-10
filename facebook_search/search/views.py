@@ -22,6 +22,8 @@ import json
 from search.models import *
 from urlparse import parse_qs, urlparse
 from django.contrib.auth import logout as django_logout
+from collections import defaultdict
+import math
 import nltk
 import string, re
 from nltk.stem import PorterStemmer
@@ -168,8 +170,6 @@ def home(request):
 	# token = request.facebook.user.oauth_token.token #user token
 	# token_app=facepy.utils.get_application_access_token('APP_ID','APP_SECRET_ID') 
 	
-
-
 	return render_to_response('home.html', context)
   
 	
@@ -216,6 +216,7 @@ def query(request):
 		formDict = request.POST
 		if formDict['query']:
 			query = formDict['query']
+			print 'getting more'
 			response = _query(query, request.user)
 		else:
 			response = {'error' : "Enter a search term", "count":0}
@@ -251,6 +252,7 @@ def _query(query, user):
 		if term in invertedIndex:
 			posts.extend(invertedIndex[term].keys())
 	posts = list(set(posts))
+	posts = querySearch(terms, invertedIndex, posts)
 	response = {}
 	response ['data'] = posts
 	response['count'] = len(posts)
@@ -404,6 +406,70 @@ def getInvertedIndex (request, userID):
 
 
 
+"""
+------------------------------------------------------
+Querying methods
+------------------------------------------------------
+"""
+def querySearch(query, index, documents):
+    print 'starting search'
+    queryDictionary = set(query)
+    print len(queryDictionary)
+    document_frequency = defaultdict(int)
+    length = defaultdict(float)
+    characters = " .,!#$%^&*();:\n\t\\\"?!{}[]<>"
+    initialize_document_frequencies(queryDictionary, index, document_frequency)
+    print 'got df'
+    initialize_lengths(queryDictionary, length, index, documents, document_frequency)
+    documents = search(queryDictionary, documents, document_frequency, index, length)
+    print 'search complete'
+    for doc in documents:
+    	print doc
+    return documents
 
+def initialize_document_frequencies(queryDictionary, index, document_frequency):
+    for term in queryDictionary:
+        document_frequency[term] = len(index[term].keys())
 
+def initialize_lengths(queryDictionary, length, index, documents, document_frequency):
+    print 'get lengths'
+    for id in documents:
+        print id
+        l = 0
+        for term in queryDictionary:
+            l += imp(term,id, index, queryDictionary, document_frequency)**2
+        length[id] = math.sqrt(l)
 
+def imp(term,id, index, queryDictionary, document_frequency):
+    if id in index[term].keys():
+        return len(index[term][id])*inverse_document_frequency(term, queryDictionary, document_frequency)
+    else:
+        return 0.0
+
+def inverse_document_frequency(term, queryDictionary, document_frequency):
+    if term in queryDictionary:
+        return math.log(1000/document_frequency[term],2)
+    else:
+        return 0.0
+
+def search(queryDictionary, documents, document_frequency, index, length):
+    scores = sorted([(id,similarity(queryDictionary,id, document_frequency, index, length))
+                     for id in documents],
+                    key=lambda x: x[1],
+                    reverse=True)
+    sortedPosts = []
+    for score in scores:
+        if score[1] > 6:
+            sortedPosts.append(score[0])
+    print len(sortedPosts)
+    return sortedPosts
+
+def intersection(sets):
+    return reduce(set.intersection, [s for s in sets])
+
+def similarity(queryDictionary,id, document_frequency, index, length):
+    similarity = 0.0
+    for term in queryDictionary:
+        similarity += inverse_document_frequency(term, queryDictionary, document_frequency)*imp(term,id, index, queryDictionary, document_frequency)
+    similarity = similarity / length[id]
+    return similarity
