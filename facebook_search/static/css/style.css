@@ -14,6 +14,24 @@
 
 .word-wrap
 {
+	
+
+	-ms-word-break: break-all;
+     word-break: break-all;
+
+     /* Non standard for webkit */
+     word-break: break-word;
+
+-webkit-hyphens: auto;
+   -moz-hyphens: auto;
+    -ms-hyphens: auto;
+        hyphens: auto;
+
+
+
+}
+
+.word-wrap-old {
 	white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
 	white-space: -pre-wrap;      /* Opera 4-6 */
 	white-space: -o-pre-wrap;    /* Opera 7 */
@@ -23,7 +41,14 @@
 	white-space: normal;
 }
 
-.panel-heading > a{
+.panel-body > p {
+	/*text-align: justify;  */
+    -webkit-hyphens: auto;  
+    -moz-hyphens: auto;  
+    hyphens: auto; 
+}
+
+.panel-heading > a {
 	color: white;
 }
 
@@ -36,4 +61,24 @@
 {
 	display: block;
 	margin: auto;
+}
+
+.modal-dialog-center {
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+
+.modal-body {
+    overflow-y: auto;
+}
+.modal-footer {
+    margin-top: 0;
+}
+
+@media (max-width: 767px) {
+  .modal-dialog-center {
+    width: 100%;
+  }
 }

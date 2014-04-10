@@ -32,18 +32,24 @@
 		<div class="container">
 			<div class="page-header">
 				<div class="row">
-					<div class="col-md-8">
+					<div class="col-md-9">
 						<h1>Facebook Search</h1>
 					</div>
-					{% if user.is_authenticated %}
-					<div class="col-md-4">
+					<div class="col-md-3">
 						<div class="profile-info">
 							<img class="pull-left img-rounded profile-image" id = "profile-picture" height="40px" src="" >
 							Hi, {{ user.first_name }}!<br>
-							<button id="logout" class="btn btn-danger btn-xs">Sign out</button>
+							
+							<form action="{% url 'logout' %}" method="post">
+								{% csrf_token %}
+								<input type="hidden" value="{{ request.path }}" name="next" />
+								<div id="facebook_login_js">
+									<button id="logout" class="btn btn-danger btn-xs">Sign out</button>
+									
+								</div>
+							</form>
 						</div>
 					</div>
-					{% endif %}
 				</div>
 			</div>
 
@@ -66,32 +72,6 @@
 			</ul>
 			{% endif %}
 
-
-
-			
-			
-			{% if not user.is_authenticated %}
-			<div class="row">
-				<div class="col-md-12">
-					<!--form to call registration via facebook -->
-					<form action="{% url 'facebook_connect' %}" method="post">
-						<h2>Register, login or connect with Facebook, YO!</h2>
-						<br />
-						{% csrf_token %}
-						<input type="hidden" value="{{ request.path }}" name="next" />
-						<div id="facebook_login_js">
-							<input onclick="F.connect(this.parentNode.parentNode); return false;" type="image" src="{{ STATIC_URL }}django_facebook/images/facebook_login.png" /><br />
-							(javascript popup)
-						</div>
-					</form>
-
-					You are not logged in, Please login by clicking one of the buttons above
-				</div>
-			</div>
-			{% endif %}
-
-			{% if user.is_authenticated %}
-
 			<div class="row" >
 				<div class="col-md-9">
 					<br>
@@ -105,8 +85,38 @@
 
 							<input type="hidden" name="reindex" value="1">
 							<br />
-							<input type="submit" class="btn btn-default btn-lg btn-block" value="Reindex" />
+							<button type="submit" class="btn btn-default btn-lg btn-block ladda-button" data-size="s" data-style="slide-left"><span class="ladda-label">Reindex</span></button>
 						</form>
+					</div>
+				</div>
+			</div>
+			<div class="modal fade" id="reindexingDialog" tabindex="-1" role="dialog" aria-labelledby="labelBofy" data-keyboard="false" data-backdrop="static" aria-hidden="true">
+				<div class="modal-dialog modal-sm modal-dialog-center">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h4>Talking to the Server</h4>
+						</div>
+						<div class="modal-body">
+							Indexing your posts... 
+							<div class="progress progress-striped active">
+								<div class="progress-bar" aria-valuenow="60" style="width: 100%;">(This might take a few minutes)</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="modal fade" id="searchingDialog" tabindex="-1" role="dialog" aria-labelledby="labelBofy" data-keyboard="false" data-backdrop="static" aria-hidden="true">
+				<div class="modal-dialog modal-sm modal-dialog-center">
+					<div class="modal-content">
+						<div class="modal-header">
+							<h4>Talking to the Server</h4>
+						</div>
+						<div class="modal-body">
+							Searching for your query...
+							<div class="progress progress-striped active">
+								<div class="progress-bar" aria-valuenow="60" style="width: 100%;"></div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -115,11 +125,11 @@
 					<form role="form" id="query-form" action="{% url 'query' %}" method="post">
 						{% csrf_token %}
 						<div class="input-group input-group-lg">
-						  <input name ="query" type="text" class="form-control"  placeholder="Enter search query...">
-				      <span class="input-group-btn">
-				        <!-- <button class="btn btn-default" type="submit">Go!</button> -->
-				        <input type="submit" class="btn btn-default" value="Go!" />
-				      </span>
+							<input name ="query" type="text" class="form-control"  placeholder="Enter search query...">
+							<span class="input-group-btn">
+								<!-- <button class="btn btn-default" type="submit">Go!</button> -->
+								<input type="submit" class="btn btn-default" value="Go!" />
+							</span>
 						</div>
 					</form>
 				</div>
@@ -129,29 +139,10 @@
 				<div class="col-md-12">
 					<div id ="results-container-parent">
 						<div id = "results-container">
-							<!-- <div class="panel panel-primary">
-							  <div class="panel-heading">
-							    <h3 class="panel-title">Panel title</h3>
-							  </div>
-							  <div class="panel-body">
-							  	This is kinda weird... http://t.co/kgN2nH9EMQ
-							  	<hr>
-							    <a href="http://google.com">
-								    <div class="row">
-								    	<div class="col-md-8 col-md-offset-1">
-								    		<img class="img-rounded" src="https://scontent-b.xx.fbcdn.net/hphotos-ash3/t1.0-9/q71/s480x480/10169355_10152065702727157_951319666_n.jpg">
-								    	</div>						    	
-								    </div>
-							    </a>
-							  </div>
-							</div> -->
 						</div>
 					</div>
 				</div>
 			</div> <!-- row -->
-
-
-			{% endif %}
 
 
 		</div> <!-- container -->
@@ -167,6 +158,7 @@
 		<!-- Placed at the end of the document so the pages load faster -->
 
 		<script src="{{ STATIC_URL }}js/jquery.min.js" type="text/javascript"></script>
+		<script src="{{ STATIC_URL }}js/jquery.timeago.js" type="text/javascript"></script>
 		<script src="{{ STATIC_URL }}js/bootstrap.js" type="text/javascript"></script>
 		<script src="{{ STATIC_URL }}js/application.js" type="text/javascript"></script>
 		<script src="{{ STATIC_URL }}django_facebook/js/statictest.js" type="text/javascript"></script>

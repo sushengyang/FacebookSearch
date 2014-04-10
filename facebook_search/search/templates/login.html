@@ -1,0 +1,92 @@
+{% load url from future %}
+<!DOCTYPE html>
+<html lang="en">
+		<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="">
+		<meta name="author" content="">
+	
+		<title>Facebook Search</title>
+
+		<!-- Bootstrap core CSS -->
+		<link href="{{ STATIC_URL }}css/bootstrap.css" type="text/css" rel="stylesheet" media="all" />
+		
+		<link href="{{ STATIC_URL }}css/font-awesome.css" type="text/css" rel="stylesheet" media="all" />
+		
+
+		<link href="{{ STATIC_URL }}css/social-buttons.css" type="text/css" rel="stylesheet" media="all" />
+	<link href="{{ STATIC_URL }}css/cover.css" type="text/css" rel="stylesheet" media="all" />
+		<link href="{{ STATIC_URL }}css/style.css" type="text/css" rel="stylesheet" media="all" />
+		<link href="{{ STATIC_URL }}django_facebook/css/facebook.css" type="text/css" rel="stylesheet" media="all" />
+		
+
+		<!-- Just for debugging purposes. Don't actually copy this line! -->
+		<!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+
+		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+	</head>
+
+	
+
+	<body>
+
+	<div class="site-wrapper">
+		<div class="site-wrapper-inner">
+			<div class="cover-container">
+				<div class="masthead clearfix">
+					<div class="inner">
+						<h3 class="masthead-brand">Facebook Search</h3>
+					</div>
+				</div>
+				<div class = "well">
+					<div class="inner cover">
+						<h1 class="cover-heading">Facebook Search</h1>
+						<p class="lead">This is a tool to let you do a full text search for your old posts on Facebook. To get started just login with your Facebook profile and give us the permission to access your posts.</p>
+						<p class="lead"></p>
+						<form action="{% url 'facebook_connect' %}" method="post">
+							{% csrf_token %}
+							<input type="hidden" value="{{ request.path }}" name="next" />
+							<div class="row">
+								<div class="center">
+									<div id="facebook_login_js">
+										<!-- <a class="btn btn-block btn-social btn-lg btn-facebook">
+									    	<i class="fa fa-facebook"></i> Sign in with Facebook
+									  	</a> -->
+										<button onclick="F.connect(this.parentNode.parentNode); return false;" class="btn  btn-lg btn-social btn-facebook transparent-facebook-button">
+											<i class="fa fa-facebook"></i>
+											Login with Facebook
+										</button>
+									</div>
+								</div>	
+							</div>
+						</form>
+					</div>
+				</div>
+
+				<div class="mastfoot">
+					<div class="inner">
+						<hr>
+						<p>Built by Gago, Keerthana, Manik and Arnav</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Bootstrap core JavaScript
+	================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script src="{{ STATIC_URL }}js/jquery.min.js" type="text/javascript"></script>
+	<script src="{{ STATIC_URL }}js/bootstrap.js" type="text/javascript"></script>
+	<script src="{{ STATIC_URL }}js/landing.js" type="text/javascript"></script>
+	<script src="{{ STATIC_URL }}js/spin.min.js" type="text/javascript"></script>
+	<script src="{{ STATIC_URL }}js/ladda.min.js" type="text/javascript"></script>
+	</body>
+</html>
+

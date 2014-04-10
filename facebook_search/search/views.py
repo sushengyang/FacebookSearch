@@ -14,13 +14,17 @@ from django_facebook.utils import next_redirect, get_registration_backend, \
 	to_bool, error_next_redirect, get_instance_for
 from open_facebook import exceptions as open_facebook_exceptions
 from open_facebook.utils import send_warning
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 import logging
 from open_facebook.api import OpenFacebook
 from django_facebook.api import get_persistent_graph, require_persistent_graph
 import json
 from search.models import *
 from urlparse import parse_qs, urlparse
+from django.contrib.auth import logout as django_logout
+import nltk
+import string, re
+from nltk.stem import PorterStemmer
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +143,20 @@ def disconnect(request):
 	response = next_redirect(request)
 	return response
 
+def index (request):
+	if request.user.is_authenticated():
+		return home(request)
+	else:
+		return login(request)
+
+def login (request):
+	context = RequestContext(request)
+	return render_to_response('login.html', context)
+
+def logout(request):
+	django_logout(request)
+	return HttpResponseRedirect("/")
+
 @facebook_required_lazy
 def home(request):
 	require_persistent_graph(request)
@@ -230,9 +248,12 @@ def _query(query, user):
 	posts = []
 	terms = preprocess(query)
 	for term in terms:
-		posts.extend(invertedIndex[term].keys()) #to flatten
-
-	response = {"list":posts}
+		if term in invertedIndex:
+			posts.extend(invertedIndex[term].keys())
+	posts = list(set(posts))
+	response = {}
+	response ['data'] = posts
+	response['count'] = len(posts)
 	return response
 
 def scoreForPost(query, postID, invertedIndex):
@@ -277,7 +298,6 @@ def buildIndex(graph, user):
 			feedDict = graph.get('me/feed', limit=200, until = int(queries['until'][0]))
 			invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
 	else:
-		print 'reindex code is not there yet'
 		while indexFeedTill(feedDict, user, lastPostTime) == False:
 			feedDict = graph.get('me/feed', limit=200, until = int(queries['until'][0]))
 	
@@ -309,15 +329,14 @@ def indexFeed(feedDict, user):
 					continue
 				addToIndex(invertedIndex, "".join(storySplit[1:len(storySplit)-1]), datum['id'])
 				count = count + 1
-	
+	print str(count) + ' posts added'
 	invertedIndexObject.numberOfPosts = invertedIndexObject.numberOfPosts + count
 	invertedIndexObject.save()
-	print 'indexed some posts'
 
 def indexFeedTill (feedDict, user, time):
 	if feedDict['data'][len(feedDict['data']) - 1]['created_time'] > time:
 		indexFeed (feedDict, user)
-		print 'added all posts'
+		
 		return False 
 	else:
 		prunedDict = {'data' : []}
@@ -327,7 +346,7 @@ def indexFeedTill (feedDict, user, time):
 			else:
 				break
 		indexFeed (prunedDict, user)
-		print 'added some posts'
+		
 		return True
 
 def addToIndex(index, postText, postID):
@@ -342,8 +361,25 @@ def addToIndex(index, postText, postID):
 		else:
 			index[word] = {postID : [i]}
 
-def preprocess (postText):
-	return postText.split(' ')
+def preprocess(text):
+	stemmer = PorterStemmer()
+	words = []
+
+	# Removing Punctuation and Special Characters
+	exclude = set(string.punctuation)
+	text = ''.join(char for char in text if char not in exclude)
+	# text.translate(string.maketrans("\n\t\r", "   "))
+	re.sub('\n\t\n', ' ', text)
+	# Case Folding
+	text = text.lower()
+   
+	# Stemming and Removal of Stopwords
+	terms = text.split()
+	for term in terms:
+		lemmatizedTerm = stemmer.stem(term.lower())
+		words.append(lemmatizedTerm.lower())
+
+	return words
 
 # def saveUserPosts (graph, user):
 # 	feedDict = graph.get('me/feed', limit=200)
