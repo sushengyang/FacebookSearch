@@ -22,7 +22,7 @@ var reindexButton = $('#reindex-form');
 reindexButton.submit(reindex);
 
 
-$(document).ready(function(){
+$(document).ready(function(){	
 	reindex();
 	$.ajax({
 		type: 'get',
