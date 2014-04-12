@@ -21,6 +21,7 @@ var reindex = function () {
 var reindexButton = $('#reindex-form');
 reindexButton.submit(reindex);
 
+var query = "";
 
 $(document).ready(function(){	
 	reindex();
@@ -52,6 +53,7 @@ $(document).ready(function(){
 var queryForm = $('#query-form');
 queryForm.submit(function () {
 	var pleaseWaitDiv = $('#searchingDialog');
+	query = $("#search-bar").val();
 	pleaseWaitDiv.modal('show');
 	$.ajax({
 		type: queryForm.attr('method'),
@@ -237,13 +239,32 @@ function udpatePostPanel (postData)
 	}
 }
 
+function escapeRegExp(string) {
+    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+}
+
+function replaceAll(find, replace, str) {
+  return str.replace(new RegExp(escapeRegExp(find), 'i'), replace);
+}
+
+function highlight(find, str) {
+  var reg = new RegExp(find, 'gi');
+  return str.replace (reg, function(str) {return "<span class = 'highlight'>" + str + "</span>";});
+}
+
 function processMessage (message)
 {
 	// message = message.replace(/'/g,"\\\'");
+	strippedQuery = query.replace(/[\.,-\/#!$%\^&\*;:{}=\-_`~()]/," ");
+	querySplit = query.split(' ');
+	for (termIndex in querySplit)
+	{
+		message = highlight(querySplit[termIndex], message);
+	}
 	message = message.replace(/\n/g, "<br />");
-	// message = message.replace(/\\\t/g,"\\\t'");
 	return message;
 }
+
 function generatePostPanel (postID)
 {
 	return '<div id="'+postID+'parent" class="panel panel-primary"><div class="panel-heading">'+'Loading...'+'</div></div>';

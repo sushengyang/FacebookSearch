@@ -164,12 +164,8 @@ def logout(request):
 def home(request):
 	require_persistent_graph(request)
 	context = RequestContext(request)
-	print 'example yo'
+	print 'homepage yo'
 	graph = request.facebook
-	
-
-	# token = request.facebook.user.oauth_token.token #user token
-	# token_app=facepy.utils.get_application_access_token('APP_ID','APP_SECRET_ID') 
 	
 	return render_to_response('home.html', context)
   
@@ -260,6 +256,9 @@ def _query(query, user):
 
 	posts = list(set(posts))
 	posts = querySearch(terms, invertedIndex, posts)
+
+	posts = postProcessSearchResults(terms, posts, invertedIndex)
+
 	response = {}
 	response ['data'] = posts
 	response['count'] = len(posts)
@@ -278,6 +277,7 @@ def getPostWordsForPostID(postID, invertedIndex):
 	for position in sorted(postWords.keys()):
 		orderedWords.append(postWords[position])
 	
+	print orderedWords
 	return orderedWords
 
 def buildIndex(graph, user):
@@ -454,3 +454,28 @@ def similarity(queryDictionary,id, document_frequency, index, length):
 		similarity += inverse_document_frequency(term, queryDictionary, document_frequency)*imp(term,id, index, queryDictionary, document_frequency)
 	similarity = similarity / length[id]
 	return similarity
+
+
+"""
+------------------------------------------------------
+Phrase Search method
+------------------------------------------------------
+"""
+
+def postProcessSearchResults (query, posts, index):
+	phraseMatches = []
+	nonMatches = []
+	queryAsString = " ".join(query)
+	for post in posts:
+		postText = getPostWordsForPostID(post, index)
+		postTextAsString = " ".join(postText)
+		if queryAsString in postTextAsString:
+			phraseMatches.append (post)
+		else:
+			nonMatches.append (post)
+	results = []
+	results.extend (phraseMatches)
+	results.extend (nonMatches)
+	return results
+
+

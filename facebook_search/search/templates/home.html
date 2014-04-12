@@ -120,7 +120,7 @@
 					<form role="form" id="query-form" action="{% url 'query' %}" method="post">
 						{% csrf_token %}
 						<div class="input-group input-group-lg">
-							<input name ="query" type="text" class="form-control"  placeholder="Enter search query...">
+							<input id = "search-bar" name ="query" type="text" class="form-control"  placeholder="Enter search query...">
 							<span class="input-group-btn">
 								<!-- <button class="btn btn-default" type="submit">Go!</button> -->
 								<input type="submit" class="btn btn-default" value="Go!" />
