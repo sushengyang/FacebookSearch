@@ -1,0 +1,16 @@
+Django==1.6.2
+MySQL-python==1.2.3
+gunicorn==18.0
+dj-database-url==0.2.2
+pymongo==2.6.3
+static==0.4
+wsgiref==0.1.2
+numpy==1.7.1
+PyYAML==3.10
+nltk==2.0.4
+django-facebook==5.3.1
+facebook-sdk==0.4.0
+-e git://github.com/errkk/gitpil.git#egg=PIL
+Pillow==2.0.0
+jsonfield==0.9.20
+dj-static==0.0.5

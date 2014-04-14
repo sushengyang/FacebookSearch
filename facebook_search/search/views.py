@@ -455,7 +455,7 @@ def imp(term,id, index, queryDictionary, document_frequency):
 		return 0.0
 
 def inverse_document_frequency(term, queryDictionary, document_frequency):
-	if term in queryDictionary:
+	if term in queryDictionary and document_frequency[term] != 0:
 		return math.log(1000/document_frequency[term],2)
 	else:
 		return 0.0
@@ -469,7 +469,7 @@ def search(queryDictionary, documents, document_frequency, index, length):
 	sortedPosts = []
 	for score in scores:
 		if score[1] > 6:
-		sortedPosts.append(score[0])
+			sortedPosts.append(score[0])
 	# print len(sortedPosts)
 	return sortedPosts
 
@@ -484,7 +484,10 @@ def similarity(queryDictionary,id, document_frequency, index, length):
 	similarity = 0.0
 	for term in queryDictionary:
 		similarity += inverse_document_frequency(term, queryDictionary, document_frequency)*imp(term,id, index, queryDictionary, document_frequency)
-	similarity = similarity / length[id]
+	
+	if length[id] != 0:
+		similarity = similarity / length[id]
+
 	return similarity
 
 

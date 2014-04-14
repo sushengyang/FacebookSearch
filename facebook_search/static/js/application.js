@@ -1,4 +1,5 @@
 
+// Re-build index or add new posts to index.
 var reindex = function () {
 	var pleaseWaitDiv = $('#reindexingDialog');
 	pleaseWaitDiv.modal('show');
@@ -13,6 +14,7 @@ var reindex = function () {
 		error: function(data) {
 			console.log (data);
 			pleaseWaitDiv.modal('hide');
+			alert ("Error building index, please refresh the page. If the error persits, contact the developers.");
 		}
 	});
 	return false;
@@ -25,6 +27,8 @@ var query = "";
 
 $(document).ready(function(){	
 	reindex();
+
+	//retrieving the profile picture.
 	$.ajax({
 		type: 'get',
 		url: '/profile-picture/',
@@ -37,19 +41,11 @@ $(document).ready(function(){
 			console.log (data);
 		}
 	});
-	$.ajax({
-		type: 'get',
-		url: '/profile-picture/',
-		success: function (data) {
-			var profilePicture = $("#profile-picture");
-			profilePicture.attr('src', data.data.url);
-		},
-		error: function(data) {
-			console.log ("error");
-			console.log (data);
-		}
-	});    
 });
+
+
+
+//Handling the queries
 var queryForm = $('#query-form');
 queryForm.submit(function () {
 	var pleaseWaitDiv = $('#searchingDialog');
@@ -69,6 +65,8 @@ queryForm.submit(function () {
 			pleaseWaitDiv.modal('hide');
 			console.log ("error");
 			console.log (data);
+			processSearchResults({'error':"Internal Error Occured. Try either this query or some other query again. If it doesn't work, contact the developers."});
+
 		}
 	});
 	return false;
@@ -88,13 +86,11 @@ function postData(url, obj, callback)
 
 function processSearchResults (results)
 {
-	// console.log(results);
 	$("#results-container").remove();
 	if (results.error) 
 	{
-		// console.log (generateWarningPanel(results.error));
 		var html = '<div id = "results-container">';
-		html += generateWarningPanel(results.error);
+		html += generateDangerPanel(results.error);
 		html += '</div>';
 		$(html).appendTo('#results-container-parent');
 	}
@@ -131,6 +127,8 @@ function processSearchResults (results)
 		$(html).appendTo('#results-container-parent');
 	}
 }
+
+// Updating the panel for the post depending on what the type is
 function udpatePostPanel (postData)
 {
 	// console.log(postData);
@@ -251,6 +249,7 @@ function replaceAll(find, replace, str) {
 	return str.replace(new RegExp(escapeRegExp(find), 'i'), replace);
 }
 
+//Methods for highlighting the search terms
 function highlight(find, str) {
 	var reg = new RegExp(find, 'gi');
 	return str.replace (reg, function(str) {return "<span class = 'highlight'>" + str + "</span>";});
@@ -269,6 +268,8 @@ function processMessage (message)
 	return message;
 }
 
+
+//hepler methods for generating HTML for the divs
 function generatePostPanel (postID)
 {
 	return '<div id="'+postID+'parent" class="panel panel-primary"><div class="panel-heading">'+'Loading...'+'</div></div>';
@@ -307,7 +308,7 @@ function generatePhotoPanelBody (message, link, pictureSource, timestamp)
 	return '<div class="panel-body"><p>'+processMessage(message)+'</p><hr><a target="_blank" href="'+link+'"><div class="row"><div class="col-md-8 col-md-offset-2"><img class="post-img img-rounded img-responsive" src="'+pictureSource+'"></div></div></a><hr><small>Posted <abbr class="timeago" title="'+timestamp+'"></abbr></small></div>';
 }
 
-
+//Centering the modal box
 function adjustModalMaxHeightAndPosition(){
 	$('.modal').each(function(){
 		if($(this).hasClass('in') == false){
