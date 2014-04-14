@@ -141,7 +141,8 @@ function udpatePostPanel (postData)
 		var heading, body;
 		if (postData.message)
 		{
-			if (postData.to)
+
+			if (postData.to && (postData.to.name||postData.to.data.length > 0))
 			{
 				
 				heading = generatePanelHeading(postData.from.name+" posted on "+(postData.to.name||postData.to.data[postData.to.data.length - 1].name)+"'s timeline.", postData.id);    
@@ -230,8 +231,11 @@ function udpatePostPanel (postData)
 			postDiv.remove();
 			return;
 		}
-		if (postData.to) 
+		if (postData.to)
+		{
+
 			heading = generatePanelHeading(postData.from.name + " posted a video to " + (postData.to.name || postData.to.data[postData.to.data.length - 1].name) + "'s timeline", postData.id);
+		}
 		else
 			heading = generatePanelHeading(postData.from.name + " posted a video", postData.id);
 		// console.log (heading);
