@@ -240,16 +240,16 @@ function udpatePostPanel (postData)
 }
 
 function escapeRegExp(string) {
-    return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+	return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 }
 
 function replaceAll(find, replace, str) {
-  return str.replace(new RegExp(escapeRegExp(find), 'i'), replace);
+	return str.replace(new RegExp(escapeRegExp(find), 'i'), replace);
 }
 
 function highlight(find, str) {
-  var reg = new RegExp(find, 'gi');
-  return str.replace (reg, function(str) {return "<span class = 'highlight'>" + str + "</span>";});
+	var reg = new RegExp(find, 'gi');
+	return str.replace (reg, function(str) {return "<span class = 'highlight'>" + str + "</span>";});
 }
 
 function processMessage (message)
