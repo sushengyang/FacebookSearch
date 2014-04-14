@@ -32,6 +32,12 @@ nltk.data.path.append('./nltk_data/')
 logger = logging.getLogger(__name__)
 
 
+'''
+--------------------------------------------------------------
+Facebook methods
+--------------------------------------------------------------
+'''
+
 @csrf_exempt
 @facebook_required(scope=['read_stream', 'email', 'user_about_me', 'user_birthday', 'user_website'])
 def connect(request, graph):
@@ -146,6 +152,9 @@ def disconnect(request):
 	response = next_redirect(request)
 	return response
 
+'''
+Indexing method that is automatically called the first time a user logs in
+'''
 def index (request):
 	if request.user.is_authenticated():
 		return home(request)
@@ -200,6 +209,10 @@ def getGraphPost (request, postID):
 	postDict = graph.get(postID)
 	return HttpResponse(json.dumps(postDict, ensure_ascii=False), mimetype="application/json")
 
+'''
+The first query method called when querying occurs. It checks whether there exists a valid search term,
+whether the user is logged in etc, before calling _query that really starts the querying.
+'''
 def query(request):
 
 	require_persistent_graph(request)
@@ -221,24 +234,13 @@ def query(request):
 		response = {'error' : "Invalid Request, please refresh the page.", "count":0}
 	return HttpResponse(json.dumps(response, ensure_ascii=False), mimetype="application/json")
 
-
+'''
+_query method:
+1. Preprocesses the query term.
+2. Retrieves possibly relevant posts (any posts that contain any word from the query phrase).
+3. calls further query methods.
+'''
 def _query(query, user):	
-
-	# feed_dict = graph.get('me/feed', limit=25)
-	# print len(feed_dict['data'])
-	# idList = []
-	# for datum in feed_dict['data']:
-	# 	if datum['type'] in ['link', 'photo', 'video']:
-	# 		if 'story' in datum and 'went to an event' in datum['story']:
-	# 			continue
-	# 		idList.append(datum['id'])
-	# 	elif 'message' in datum or ('status_type' in datum and datum['status_type'] == "wall_post"):
-	# 		idList.append(datum['id'])
-			
-	# response = {}
-	# response ['data'] = idList
-	# response['count'] = len(idList)
-
 	invertedIndexObject = InvertedIndex.objects.get (userID = user.id)
 	invertedIndex = invertedIndexObject.invertedIndex
 	
@@ -265,6 +267,9 @@ def _query(query, user):
 	return response
 
 
+'''
+returns the words in a post
+'''
 def getPostWordsForPostID(postID, invertedIndex):
 	postWords = {}
 	for word in invertedIndex:
@@ -280,6 +285,11 @@ def getPostWordsForPostID(postID, invertedIndex):
 	print orderedWords
 	return orderedWords
 
+'''
+Builds the index for a user.
+Retrieves 200 posts at a time and builds the index till it has at least 1000 posts.
+This is limited due to facebook API restrictions of 600 calls per 600s for a user/app pair.
+'''
 def buildIndex(graph, user):
 
 	feedDict = graph.get('me/feed', limit=200)
@@ -306,6 +316,9 @@ def buildIndex(graph, user):
 	invertedIndexObject.lastPostTime = newLastPostTime
 	invertedIndexObject.save()
 
+'''
+adds all the posts in feedDict to the index.
+'''
 def indexFeed(feedDict, user):
 	
 	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
@@ -334,6 +347,9 @@ def indexFeed(feedDict, user):
 	invertedIndexObject.numberOfPosts = invertedIndexObject.numberOfPosts + count
 	invertedIndexObject.save()
 
+'''
+adds all the posts in feedDict to the index till a specified time.
+'''
 def indexFeedTill (feedDict, user, time):
 	if feedDict['data'][len(feedDict['data']) - 1]['created_time'] > time:
 		indexFeed (feedDict, user)
@@ -350,6 +366,9 @@ def indexFeedTill (feedDict, user, time):
 		
 		return True
 
+'''
+adds a specific post to the index.
+'''
 def addToIndex(index, postText, postID):
 	words = preprocess(postText)
 	for i in range(0, len(words)):
@@ -362,6 +381,9 @@ def addToIndex(index, postText, postID):
 		else:
 			index[word] = {postID : [i]}
 
+'''
+Preprocessing using the WordNetLemmatizer, imported from nltk.
+'''
 def preprocess(text):
 	lemmatizer = WordNetLemmatizer()
 	words = []
@@ -421,6 +443,11 @@ def initialize_lengths(queryDictionary, length, index, documents, document_frequ
 			l += imp(term,id, index, queryDictionary, document_frequency)**2
 		length[id] = math.sqrt(l)
 
+
+'''
+Calculates the importance of a term, with respect to a document (post).
+imp = tf(term,doc)*idf(term)
+'''
 def imp(term,id, index, queryDictionary, document_frequency):
 	if id in index[term].keys():
 		return len(index[term][id])*inverse_document_frequency(term, queryDictionary, document_frequency)
@@ -434,13 +461,14 @@ def inverse_document_frequency(term, queryDictionary, document_frequency):
 		return 0.0
 
 def search(queryDictionary, documents, document_frequency, index, length):
+	# sorts all relevant documents in order of similarity, or relevance
 	scores = sorted([(id,similarity(queryDictionary,id, document_frequency, index, length))
 					 for id in documents],
 					key=lambda x: x[1],
 					reverse=True)
 	sortedPosts = []
 	for score in scores:
-		# if score[1] > 6:
+		if score[1] > 6:
 		sortedPosts.append(score[0])
 	# print len(sortedPosts)
 	return sortedPosts
@@ -448,6 +476,10 @@ def search(queryDictionary, documents, document_frequency, index, length):
 def intersection(sets):
 	return reduce(set.intersection, [s for s in sets])
 
+'''
+calculates the similarity of a doc with respect to the query term.
+similarity = sum(idf(term)*imp(term, doc)) for every term in the query.
+'''
 def similarity(queryDictionary,id, document_frequency, index, length):
 	similarity = 0.0
 	for term in queryDictionary:
@@ -456,12 +488,9 @@ def similarity(queryDictionary,id, document_frequency, index, length):
 	return similarity
 
 
-"""
-------------------------------------------------------
+'''
 Phrase Search method
-------------------------------------------------------
-"""
-
+'''
 def postProcessSearchResults (query, posts, index):
 	phraseMatches = []
 	nonMatches = []
@@ -477,5 +506,3 @@ def postProcessSearchResults (query, posts, index):
 	results.extend (phraseMatches)
 	results.extend (nonMatches)
 	return results
-
-
