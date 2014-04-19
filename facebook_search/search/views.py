@@ -282,7 +282,7 @@ def getPostWordsForPostID(postID, invertedIndex):
 	for position in sorted(postWords.keys()):
 		orderedWords.append(postWords[position])
 	
-	print orderedWords
+	# print orderedWords
 	return orderedWords
 
 '''
@@ -296,7 +296,9 @@ def buildIndex(graph, user):
 	newLastPostTime = feedDict['data'][0]['created_time']
 	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
 	lastPostTime = invertedIndexObject.lastPostTime
-	if lastPostTime == "":
+	invertedIndexObject.lastPostTime = newLastPostTime
+	invertedIndexObject.save()
+	if lastPostTime == "" or invertedIndexObject.numberOfPosts < 400:
 		while len(feedDict['data']) > 0 and invertedIndexObject.numberOfPosts < 1000:
 			# index them
 			print 'indexing some posts'
@@ -312,9 +314,8 @@ def buildIndex(graph, user):
 		while indexFeedTill(feedDict, user, lastPostTime) == False:
 			feedDict = graph.get('me/feed', limit=200, until = int(queries['until'][0]))
 	
-	invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
-	invertedIndexObject.lastPostTime = newLastPostTime
-	invertedIndexObject.save()
+	# invertedIndexObject = InvertedIndex.objects.get(userID = user.id)
+	
 
 '''
 adds all the posts in feedDict to the index.
@@ -328,21 +329,21 @@ def indexFeed(feedDict, user):
 		index = {}
 		if datum['type'] in ['photo', 'link', 'video']:
 			if 'message' in datum:
-				addToIndex(invertedIndex, datum['message'], datum['id'])
-				count = count + 1
+				if addToIndex(invertedIndex, datum['message'], datum['id']) == True:
+					count = count + 1
 			elif 'description' in datum and datum['type'] != 'link':
-				addToIndex(invertedIndex, datum['description'], datum['id'])
-				count = count + 1
+				if addToIndex(invertedIndex, datum['description'], datum['id']) == True:
+					count = count + 1
 		elif datum['type'] == 'status':
 			if 'message' in datum:
-				addToIndex(invertedIndex, datum['message'], datum['id'])
-				count = count + 1
+				if addToIndex(invertedIndex, datum['message'], datum['id']) == True:
+					count = count + 1
 			elif 'story' in datum and 'status_type' in datum and datum['status_type'] == 'wall_post':
 				storySplit = datum['story'].split('"')
 				if len(storySplit) == 1:
 					continue
-				addToIndex(invertedIndex, "".join(storySplit[1:len(storySplit)-1]), datum['id'])
-				count = count + 1
+				if addToIndex(invertedIndex, "".join(storySplit[1:len(storySplit)-1]), datum['id']) == True:
+					count = count + 1
 	print str(count) + ' posts added'
 	invertedIndexObject.numberOfPosts = invertedIndexObject.numberOfPosts + count
 	invertedIndexObject.save()
@@ -374,13 +375,15 @@ def addToIndex(index, postText, postID):
 	for i in range(0, len(words)):
 		word = words[i]
 		if word in index:
-			if(postID in index[word]):
+			if postID in index[word] and i in index[word][postID]:
+				return False
+			elif postID in index[word]:
 				index[word][postID].append(i)
 			else:
 				index[word][postID] = [i]
 		else:
 			index[word] = {postID : [i]}
-
+	return True
 '''
 Preprocessing using the WordNetLemmatizer, imported from nltk.
 '''
