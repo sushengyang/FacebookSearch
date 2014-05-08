@@ -5,7 +5,14 @@ Augmenting Facebook's graph search with functionality for full-text search of a 
 
 The best way to access the app is to go to http://facebook-search.herokuapp.com
 
-If you want to deploy locally, add the following entry in your hosts file:
+## Local deployment 
+
+(Are you really sure you want to do this?)
+
+If yes, then here are the steps.
+
+Add the following entry in your hosts file:
+    
     127.0.0.1  facebook-search.herokuapp.com
 
 
