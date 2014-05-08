@@ -15,6 +15,7 @@ Then we need to install all our dependencies. In the shell, navigate to this pro
     pip install -r requirements.txt
 
 We need the WordNet Corpus for nltk so let's get that now. in the shell run 'python'. Once the python shell opens, run the following.
+
     nltk.download()
 
 This will open a GUI downloaded for nltk. In the corpus section, get the WordNet Corpus.
@@ -26,4 +27,5 @@ Run the folowing.
     python manage.py runserver
 
 Navigate to facebook-search.herokuapp.com:8000 (We mapped this to localhost earlier. This was to tell facebook that this is a legitimate deployment and not an attempt at cross site scripting.)
+
 Login via Facebook and we are good to go.
