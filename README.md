@@ -6,7 +6,7 @@ Augmenting Facebook's graph search with functionality for full-text search of a 
 The best way to access the app is to go to http://facebook-search.herokuapp.com
 
 If you want to deploy locally, add the following entry in your hosts file:
-127.0.0.1  facebook-search.herokuapp.com
+    127.0.0.1  facebook-search.herokuapp.com
 
 
 Make sure you have Python installed and have the package manager called Pip install. To see if Pip is installed, open up a shell and type 'pip'.
