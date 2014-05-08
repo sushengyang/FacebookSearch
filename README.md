@@ -5,7 +5,7 @@ Augmenting Facebook's graph search with functionality for full-text search of a 
 
 The best way to access the app is to go to http://facebook-search.herokuapp.com
 
-A demo video is available ![here](https://www.youtube.com/watch?v=0ag_2ngGlwA)
+A demo video is available [here](https://www.youtube.com/watch?v=0ag_2ngGlwA)
 
 ## Local deployment 
 
