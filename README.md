@@ -39,4 +39,4 @@ Navigate to [facebook-search.herokuapp.com:8000](facebook-search.herokuapp.com:8
 
 Login via Facebook and we are good to go.
 
-*Warning:* Remember to remove the hosts file entry later.
+**Warning:** Remember to remove the hosts file entry once you're done.
