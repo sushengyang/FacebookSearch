@@ -35,6 +35,6 @@ Run the folowing.
     python manage.py syncdb
     python manage.py runserver
 
-Navigate to facebook-search.herokuapp.com:8000 (We mapped this to localhost earlier. This was to tell facebook that this is a legitimate deployment and not an attempt at cross site scripting.)
+Navigate to [facebook-search.herokuapp.com:8000](facebook-search.herokuapp.com:8000) (We mapped this to localhost earlier. This was to tell facebook that this is a legitimate deployment and not an attempt at cross site scripting.)
 
 Login via Facebook and we are good to go.
