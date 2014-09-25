@@ -28,8 +28,8 @@ TEMPLATE_DEBUG = True
 
 ALLOWED_HOSTS = []
 
-FACEBOOK_APP_ID = '1398781910393871'
-FACEBOOK_APP_SECRET = '601b0776a562a70a23307ee2f210edff'
+FACEBOOK_APP_ID = ''
+FACEBOOK_APP_SECRET = ''
 FACEBOOK_SCOPE = ['read_stream', 'email', 'user_about_me', 'user_birthday', 'user_website']
 FACEBOOK_CANVAS_PAGE = 'https://apps.facebook.com/%s/' % FACEBOOK_APP_ID
 
